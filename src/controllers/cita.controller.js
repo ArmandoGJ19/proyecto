@@ -3,7 +3,7 @@ import e from "express";
 
 export const getCitas = async (req, res) => {
     try {
-        const citas = await Cita.find();
+        const citas = await Cita.find({ user: req.userId });
        if(!citas){
         return res.status(404).json({ message: "No hay Citas" });
        }
@@ -26,10 +26,15 @@ export const getCitabyId = async (req, res) => {
 
 export const createCita = async (req, res) => {
     try {
-        const {cliente, fecha, estado, notas} = req.body;
-        if(!cliente.telefono || !cliente.nombre || !fecha){
-            return res.status(404).json({message: "Los campos telefono, nombre y fecha son obligatorios"});
+        const { cliente, fecha, estado, notas } = req.body;
+
+        // Verifica si el objeto cliente y sus propiedades existen
+        if (!cliente || !cliente.telefono || !cliente.nombre || !fecha) {
+            return res.status(400).json({
+                message: "Los campos telefono, nombre y fecha son obligatorios en el cliente"
+            });
         }
+
         const newCita = new Cita({
             cliente: {
                 nombre: cliente.nombre,
@@ -37,19 +42,21 @@ export const createCita = async (req, res) => {
                 telefono: cliente.telefono,
             },
             fecha: fecha,
-            estado: estado|| 'pendiente',
+            estado: estado || 'pendiente',
             notas: notas,
             user: req.userId
-
         });
-        // guardar la cita en la base de datos
+
+        // Guardar la cita en la base de datos
         await newCita.save();
-        // devolver una respuesta exitosa
+
+        // Devolver una respuesta exitosa
         res.status(201).json(newCita);
     } catch (error) {
-        res.status(404).json({ message: error.message });
+        res.status(500).json({ message: error.message });
     }
-}
+};
+
 export const updateCita = async (req, res) => {
     try {
         const { id } = req.params;
